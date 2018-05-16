@@ -1,0 +1,14 @@
+\begin{thebibliography}{}
+
+\bibitem[\protect\astroncite{Omori et~al.}{2007}]{Omori2007}
+Omori, Y., Chib, S., Shephard, N., and Nakajima, J. (2007).
+\newblock Stochastic volatility with leverage: Fast and efficient likelihood
+  inference.
+\newblock {\em Journal of Econometrics}, 140(2):425--449.
+
+\bibitem[\protect\astroncite{Yu}{2005}]{Yu2005}
+Yu, J. (2005).
+\newblock On leverage in a stochastic volatility model.
+\newblock {\em Journal of Econometrics}, 127(2):165--178.
+
+\end{thebibliography}

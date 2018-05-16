@@ -1,0 +1,238 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper]{geometry}
+\geometry{verbose,tmargin=3cm,bmargin=3cm,lmargin=3cm,rmargin=3cm} 
+\usepackage {fancyhdr}
+\usepackage{amsmath,amsthm,amssymb,bm}
+\usepackage{mathrsfs} 
+\usepackage{bbm}
+\usepackage{textcomp}  
+\usepackage{titlesec}
+\usepackage{etoolbox}
+
+\makeatletter
+\patchcmd{\ttlh@hang}{\parindent\z@}{\parindent\z@\leavevmode}{}{}
+\patchcmd{\ttlh@hang}{\noindent}{}{}{}
+\makeatother
+\usepackage{graphicx}   
+\usepackage{longtable,rotating}
+\usepackage{multirow}
+\usepackage{pdflscape}
+\usepackage[round]{natbib}
+\usepackage[]{placeins}
+\usepackage{setspace}    
+\usepackage{booktabs}      
+\usepackage{tabularx}  
+\usepackage{subfig}    
+%\usepackage[multiple]{footmisc}  
+\usepackage{hyperref}  
+\usepackage{caption}
+\usepackage{array}  
+\usepackage{epstopdf}   
+\usepackage{ragged2e}
+\usepackage{enumitem}    
+\usepackage{float}   
+\usepackage{subfig}
+\usepackage{authblk}
+\usepackage{color}
+\usepackage[utf8]{inputenc} 
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1pt}  
+\usepackage{titlesec}
+\usepackage[para,online,flushleft]{threeparttable}
+\usepackage[titletoc,toc,title]{appendix}
+\graphicspath{{C:/Users/uqttrin2/Desktop/Kelly/JOINT_ACADEMICWORK/BITCOINT_HouTrinh/Writeup/Figures}}  
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+\newcommand{\bbeq}{\begin{equation*}}
+\newcommand{\eeeq}{\end{equation*}}
+\newcommand{\bbmatrix}{\begin{bmatrix}}
+\newcommand{\ebmatrix}{\end{bmatrix}}	 
+\newtheorem{thm}{Theorem}[section]
+\numberwithin{equation}{section}
+\onehalfspacing
+%\usepackage{titling}  
+\title{	\bfseries {A R package for stochastic volatility models with leverage effects and a heavy distribution }}
+\author{Conrad Sanderson \; Kelly Trinh}
+\begin{document}    
+\maketitle  
+\noindent\makebox[\linewidth]{\rule{\textwidth}{1pt}} 
+\textbf{Abstract}:\\
+We provide a R package to estimate a number of popular stochastic volatility models which  allow for leverage effect, volatility feedback and stochastic volatility with jumps, time-varying parameters and a heavy-tailed distribution. \\
+\noindent\makebox[\linewidth]{\rule{\textwidth}{1pt}}     
+\section{Introduction}
+Stochastic volatility models have gained its popularity in modelling time-varying volatility with many applications, particularly in finance\\
+To be continued \\
+
+\textcolor{red}{Two main C++ files are SVM and SVL}
+\section{Stochastic volatility model with volatility feedback effect (SVM)}
+The stochastic volatility mean has the following specification:
+\begin{align}
+\Delta y_t&=\mu+\alpha \exp({h_t}) +\varepsilon^y_t \quad \text{where}\quad \varepsilon^y_t \sim N(0, e^{h_t}), \label{eq:SVM1}\\
+h_t &= \mu_h + \phi(h_{t-1} - \mu_h) + \varepsilon_t^h, \quad \varepsilon_t^h \sim \mathcal{N}(0, \omega_h^2), \label{eq:SVM2}
+\end{align}
+The volatility $h_t$ is assumed to follow an AR(1) process with $|\phi_h|<1$, and the initialized $h_1 \sim \mathcal{N}(\mu_h, \omega_h^2/(1 - \rho^2) )$ \\
+
+To facilitate further discussion, we stack all vectors over time periods, i.e. $\mathbf{y}=(y_1,\ldots, y_T)'$, $\mathbf{h}=(h_1,\ldots, h_{T})$.
+The model is estimated via the below MCMC algorithm  
+
+\begin{itemize}
+\item Sample $p(\mathbf{h}|\mathbf{y}, \mu, \mu_h, \phi_h, \alpha, \omega^2_h)$,
+\item Sample $p(\mu, \alpha |\mathbf{y}, \mathbf{h}, \mu_h, \phi_h, \omega^2_h)$,
+\item Sample $p(\mu_h|\mathbf{y}, \mathbf{h}, \mu, \phi_h, \alpha, \omega^2_h),$
+\item Sample $p(\phi_h|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \alpha, \omega^2_h),$
+\item Sample $p(\omega^2_h|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \phi_h, \alpha).$
+\end{itemize}
+
+\subsection*{Sample $p(\mathbf{h}|\mathbf{y}, \mu, \mu_h, \phi_h, \rho, \omega^2_h)$}
+Sampling $\mathbf{h}$ has a similar procedure in all the models presented in this paper. It is noted that
+\bbeq
+p(\mathbf{h}|\mathbf{y}, \mu, \mu_h, \phi_h, \alpha, \omega^2_h)\propto p(\mathbf{y}|\mathbf{h}, \mu)p(\mathbf{h}| \alpha, \mu_h, \phi_h, \omega^2_h).
+\eeeq 
+Sampling $p(\mathbf{h}|\mathbf{y}, \mu, \mu_h, \phi_h, \alpha, \omega^2_h)$ is based on Gaussian approximation,, and then the acceptance-rejection Metropolis-Hasting algorithm is used to determine if the draws from the proposed density is accepted. \\
+We will see later that $p(\mathbf{h}| \alpha, \mu_h, \phi_h, \omega^2_h)$ is a normal distribution. The likelihood $p(\mathbf{y}|\mathbf{h}, \mu)$ is approximated by a Gaussian using a second-order Taylor expansion . Following Bayes factor, sampling  $p(\mathbf{h}|\mathbf{y}, \mu, \mu_h, \phi_h, \alpha, \omega^2_h)$ is then from a Gaussian.  An acceptance-rejection Metropolis-Hasting algorithm is then applied to determine if the proposed draws from the proposal Gaussian are accepted.\\
+
+We now show the explicit forms of  $p(\mathbf{y}|\mathbf{h}, \mu)$ and $p(\mathbf{h}| \alpha, \mu_h, \phi_h, \omega^2_h)$. $p(\mathbf{h}| \alpha, \mu_h, \phi_h, \omega^2_h)$ is obtained from the state equation by arranging equation \eqref{eq:SVM2} as follows
+\begin{align}
+\mathbf{H}_{\phi_h} \mathbf{h} &=\tilde{\pmb{\delta}}_h +\pmb{\varepsilon}^h,  \qquad \varepsilon^h \sim N(0, \pmb{\Sigma}_h)\nonumber \\
+\mathbf{h}&=\mathbf{H}^{-1}_{\phi_h} \tilde{\pmb{\delta}}_h+\mathbf{H}^{-1}_{\phi_h}\pmb{\varepsilon}^h, \nonumber \\
+\mathbf{h}&=\pmb{\delta}_h+\mathbf{H}^{-1}_{\phi_h}\pmb{\varepsilon}^h, \nonumber
+\end{align}
+where $\mathbf{H}_{\phi_h}$=$\bbmatrix 1 & 0 & 0 &\ldots &0\\
+-\phi_h &1 & 0 & \ldots & 0 \\
+0 & -\phi_h & 1 & \ldots & 0 \\
+\vdots & \ddots & \ddots& \ddots & \vdots \\
+0 & 0 & \ldots & -\phi_h & 1 \ebmatrix $, $\pmb{\Sigma}_h=\bbmatrix \frac{\omega^2_h}{1-\phi^2_h} & 0 & 0 &\ldots &0\\
+0&\omega^2_h & 0 & \ldots & 0 \\
+0 & 0 & \omega^2_h & \ldots & 0 \\
+\vdots & \ddots & \ddots& \ddots & \vdots\\
+0 & 0 & \ldots & 0& \omega^2_h\ebmatrix $,\\ $\pmb{\tilde{\delta}}_h=(\mu_h, (1-\phi_h)\mu_h,\ldots, (1-\phi_h)\mu_h)'$. \\
+It is easy to see that the log-density of $p(\mathbf{h}| \rho, \mu_h, \phi_h, \omega^2_h)$ is given by
+\beq
+\text{log}( p(\mathbf{h}| \rho, \mu_h, \phi_h, \omega^2_h))=\frac{1}{2} (\mathbf{h}'\mathbf{H}_{\phi_h} \pmb{\Sigma}_h^{-1}\mathbf{H}_{\phi_h} \mathbf{h}-2\mathbf{h}\mathbf{H}_{\phi_h} \mathbf{\Sigma}_h^{-1}\mathbf{H}_{\phi_h}\pmb{\delta}_h )+c_1, \label{eq:priorh}
+\eeq 
+where $c_1$ is a constant independent of $\mathbf{h}$.\\
+
+A second-order Taylor expansion is used to approximate $p(\mathbf{y}|\mathbf{h}, \mu)$, i.e.
+\begin{align}
+\text{log}p(\mathbf{y}|\mathbf{h}, \mu) &\approx \text{log}p(\mathbf{y}|\mathbf{\tilde{h}}, \mu) +(\mathbf{h}-\mathbf{\tilde{h}})'\mathbf{f} -\frac{1}{2}(\mathbf{h}-\mathbf{\tilde{h}})'\mathbf{G}(\mathbf{h}-\mathbf{\tilde{h}})\\
+&=-\frac{1}{2}(\mathbf{h}\mathbf{G}\mathbf{h}-2\mathbf{h}'(\mathbf{f}+\mathbf{G}\mathbf{\tilde{h}})+c_2), \label{eq:llikeh}
+\end{align}
+where $c_2$ is a constant independent of $\mathbf{h}$. The first derivative $\mathbf{f}$ and a negative Hessian matrix $\mathbf{G}$ are as follows 
+\begin{align*}
+\mathbf{f}&=\bbmatrix f_1 \\ f_2 \\ \vdots \\f_{T} \ebmatrix, \qquad \mathbf{G} =\bbmatrix
+G_{11} & 0 & \ldots & 0 \\
+0 & G_{22} & \ldots  & 0 \\
+\vdots & \ddots & \ddots& \vdots \\
+0 & \ldots & 0 & G_{TT}
+\ebmatrix
+\end{align*}
+The first and second derivatives of the conditional likelihood with respect to $h_t$ are
+\begin{align*}
+f_t=\frac{\partial}{\partial h_t} \text{log}p(y_t|\mu, \alpha, h_t) & = -\frac{1}{2}-\frac{1}{2} \alpha^2 e^{h_t}+\frac{1}{2}e^{-h_t}(y_t -\mu)^2, \\
+G_t=-\frac{\partial^2}{\partial h^2_t} \text{log}p(y_t|\mu, \alpha, h_t) & = \frac{1}{2}\alpha^2 e^{h_t}+\frac{1}{2}e^{-h_t}(y_t -\mu)^2,
+\end{align*}
+Combing \eqref{eq:priorh} and \eqref{eq:llikeh}, we have
+\beq
+\text{log}(p(\mathbf{h}|\mathbf{y}, \mu, \mu_h, \phi_h, \alpha, \omega^2_h)) \approx -\frac{1}{2}(\mathbf{h}'\mathbf{K}_h\mathbf{h} -2\mathbf{h}'\mathbf{k_h})+c_3,
+\eeq
+where $c_3$ is independent of $\mathbf{h}$. The above expression is the log kernel of the $\mathcal{N}(\hat{\mathbf{h}}, \mathbf{K_h}^{-1})$ where $\mathbf{K_h}=\mathbf{H}'_{\phi_h}$ $\mathbf{\Sigma}_h \mathbf{H}_{\phi_h} +\mathbf{G}$, $\hat{\mathbf{h}}=\mathbf{K_h}^{-1}\mathbf{k_h}$ with  $\mathbf{k_h}=\mathbf{f}+\mathbf{G}\mathbf{\tilde{h}}+\mathbf{H}'_{\phi_h} \mathbf{\Sigma}_h \mathbf{H}_{\phi_h} \pmb{\delta_h}$. The point   $\mathbf{\tilde{h}}$ is obtained by Newton-Raphson method. That is,
+ 
+ Initialize with $\mathbf{h}=\mathbf{h}^{(1)}$ for some constant vector $\mathbf{h}^{(1)}$. For $l =1, 2, \ldots,$ use $\mathbf{\tilde{h}}=\mathbf{h}^{(l)}$ in the evaluation of $\mathbf{K_h}$ and $\mathbf{k_h}$ and compute
+ 
+ \beq
+ \mathbf{h}^{(l+1)}=\mathbf{h}^{(l)} + \mathbf{K}^{-1}_{\mathbf{h}}(-\mathbf{K}_{\mathbf{h}} \mathbf{h}^{(l)} +\mathbf{k}_{\mathbf{h}})= \mathbf{K}^{-1}_{\mathbf{h}}\mathbf{k}_{\mathbf{h}}
+ \eeq
+ Repeat this procedure until some convergence criterion is reached.\\
+ 
+ Acceptance-rejection Metropolis Hasting is then applied. 
+\subsection*{Sampling $p(\mu, \alpha |\mathbf{y}, \mathbf{h}, \mu_h, \phi_h, \omega^2_h)$}
+We jointly sample $(\mu, \alpha)$ from $p(\mu, \alpha |\mathbf{y}, \mathbf{h}, \mu_h, \phi_h, \omega^2_h)= p(\mu, \alpha|\mathbf{y}, \mathbf{h})$. We define $\bm{\beta}=(\mu, \alpha)'$, and assume the prior of $\bm{\beta}$ follows a normal distribution with the variance  $\mathbf{V_{\beta}}=\text{diag}(V_{\mu}, V_{\alpha})$ and the mean $\bm{\beta}_0=(\mu_0, \alpha_0)'$ and 
+\bbeq
+\mathbf{X}_{\bm{\beta}}
+=\bbmatrix 1 & e^{h_1}\\
+\vdots & \vdots \\
+1 & e^{h_T}
+\ebmatrix
+\eeeq
+Following Bayes theorem we have $p(\mu, \alpha| \mathbf{y}, \mathbf{h}) \sim  N(\hat{\bm{\beta}}, \mathbf{D}_{\bm{\beta}}) $ where   $\mathbf{D}_{\bm{\beta}}^{-1} = \mathbf{V}^{-1}_{\bm{\beta}}+ \mathbf{X}'_{\bm{\beta}} \mathbf{\Sigma}^{-1}_y\mathbf{X}_{\bm{\beta}}$ and $\hat{\bm{\beta}}=\mathbf{D}_{\bm{\beta}}(\mathbf{V}_{\bm{\beta}}^{-1} \bm{\beta_0} +\mathbf{X}'_{\bm{\beta}}  \mathbf{\Sigma}^{-1}_y \mathbf{y})$ with  $\mathbf{\Sigma}_y=\text{diag}(e^{h_1}, \ldots, e^{h_T})$.
+\subsection*{Sample $p(\mu_h|\mathbf{y}, \mathbf{h}, \mu, \phi_h, \alpha, \omega^2_h),$}
+The prior of $\mu_h$ is assumed to be $N(\mu_{h_0}, V_{\mu_h})$. Following Bayes theorem, we have\\
+ $p(\mu_h|\mathbf{y}, \mathbf{h}, \mu, \phi_h, \alpha, \omega^2_h) \sim N(\hat{\mu}_h, D_{\mu_h})$ where $D^{-1}_{\mu_h}=V^{-1}_{\mu_h} +\frac{(T-1)(1-\phi_h)^2+(1-\phi_h^2)}{\omega^2_h} $ and $\mu_h=D_{\mu_h} \Big (\mu_{h_0}V^{-1}_{\mu_h}+\frac{1-\phi^2_h}{\omega^2_h}(h_1+\frac{1-\phi_h}{\omega_h^2}\sum_{t=2}^T( h_t -\phi h_{t-1}))\Big)$
+\subsection*{ Sample $p(\phi_h|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \alpha, \omega^2_h),$}
+The prior of $\phi_h$ is assumed to be truncated normal $N(\phi_{h_0}, V_{\phi_h})1(|\phi_h|<1)$. The conditional posterior of $\phi_h$ is $N(\hat{\phi}_{h}, D_{\phi_h})1(|\phi_h|<1)$ where $ D^{-1}_{\phi_h} =V^{-1}_{\phi_h} + \frac{\sum_{t=2}^T(h_{t}h_{t-1})}{\omega_h^2}$ and $\hat{\phi}_{h}=D_{\phi_h} \Big (\phi_{h_0}V^{-1}_{\phi_h}+ \frac{\sum_{t=1}^Th_ty_t)}{\omega^2_h} \Big)$
+\subsection*{Sample $p(\omega^2_h|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \phi_h, \alpha)$}
+The prior of the inverse $\omega^2_h$ is assumed to be $G(\nu_h, S_h)$. The conditional posterior\\
+ $p(\omega^{-2}_h|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \phi_h, \alpha)$ also follows a Gamma distribution $G(\overline{\nu}_h, \overline{S}_h)$ with $\overline{\nu}_h=\nu_h+T/2$ and $\overline{S}_h= S_h+ \frac{(h_1-\mu_h)\sqrt{1-\phi_h^2} +\sum_{t=2}^T h_t -(1-\phi_h)\mu_h - \phi_h h_{t-1}}{2}$.
+\section{Stochastic volatility model with leverage effect model (SVL)}
+In finance, it is often observed that the an increrease (decrease) in a return of an asset is associated with a decrease (increase) of volatility. This empirical pattern is known as the leverage effect. Here we provide a R package for a stochastic volatility with the leverage effect based on the specification of \cite{Yu2005} and \cite{Omori2007}. We also provide the estimation for the extended models which incorporate time-varying parameters and a heavy-tailed disturbance.\\
+
+\cite{Yu2005} and \cite{Omori2007} specified their models in the following way:  
+\begin{align}
+y_t&=\mu+\varepsilon^y_t \quad \text{where}\quad \varepsilon^y_t \sim N(0,  e^{h_t}), \label{eq:SVL1} \\
+h_{t+1} &= \mu_h + \phi(h_{t} - \mu_h) + \varepsilon_{t+1}^h, \quad \varepsilon_t^h \sim \mathcal{N}(0, \omega_h^2), \label{eq:SVL2} \\
+\begin{pmatrix}
+\varepsilon_t^y \\ \varepsilon_t^h 	\end{pmatrix} &\sim N \Bigg( 0, \begin{pmatrix} e^{h_{t+1}} & \rho e^{h_t/2} \omega_h \\ \rho e^{h_t/2} \omega_h & \omega^2_h
+\end{pmatrix} \Bigg) \label{eq:SVL3}  
+\end{align}
+where $y_t$ is an asset return. The volatility is assumed to follow an AR(1) process with $|\phi_h|<1$ as stated in equation \eqref{eq:SVL2} with the initialized $h_1 \sim \mathcal{N}(\mu_h, \omega_h^2/(1 - \rho^2) )$. The correlation $\rho$ captures the correlation between the return at period  $t$ and the realized volatility at time $t+1$ (i.e., $\text{cov}(\varepsilon_t^y, \varepsilon^h_{t+1})=\rho)$. \\
+
+To facilitate further discussion, we stack all vectors over time periods, i.e. $\mathbf{y}=()y_1,\ldots, y_T)'$, $\mathbf{h}=(h_1,\ldots, h_{T+1})$.
+The model is estimated via the below MCMC algorithm 
+\begin{itemize}
+\item Sample $p(\mathbf{h}|\mathbf{y}, \mu, \mu_h, \phi_h, \rho, \omega^2_h)$,
+\item Sample $p(\mu|\mathbf{y}, \mathbf{h}, \mu_h, \phi_h, \rho, \omega^2_h)$,
+\item Sample $p(\mu_h|\mathbf{y}, \mathbf{h}, \mu, \phi_h, \rho, \omega^2_h),$
+\item Sample $p(\phi_h|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \rho, \omega^2_h),$
+\item Sample $p(\rho|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \phi_h, \omega^2_h),$
+\item Sample $p(\omega^2_h|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \phi_h, \rho).$
+\end{itemize}
+
+Here I provide an algorithm to estimate the parameters. 
+
+\subsection*{Sample $p(\mathbf{h}|\mathbf{y}, \mu, \mu_h, \phi_h, \rho, \omega^2_h)$}
+Similar idea is above. However, the first derivative $\mathbf{f}$ and a negative Hessian matrix $\mathbf{G}$ in SVL are as follows 
+\begin{align*}
+\mathbf{f}&=\bbmatrix f_1 \\ f_2 \\ \vdots \\f_{T+1} \ebmatrix, \qquad \mathbf{G} =\bbmatrix
+G_{11} & G_{12} & 0 & \ldots & 0 \\
+G_{12} & G_{22} & G_{23} & \ldots & 0 \\
+\vdots & \ddots & \ddots& \ddots & \vdots\\
+0 & \ldots & G_{T-1,T} & G_{TT} & G_{T,T+1}\\  
+0 & \ldots & 0 & G_{T,T+1} & G_{T+1, T+1}
+\ebmatrix
+\end{align*}
+for $t=2, \ldots, T+1$,
+\begin{align*}
+f_1&=\frac{\partial \text{log} p_t}{\partial h_t}|_{\mathbf{h}=\tilde{\mathbf{h}}},  \quad f_t \frac{\partial}{\partial h_t}(\text{log}p_t + \text{log} p_{t-1})|_{\mathbf{h}=\tilde{\mathbf{h}}},\\
+G_{11} &=-\frac{\partial^2 \text{log}p_t}{\partial h^2_t}|{\mathbf{h}=\tilde{\mathbf{h}}}, \quad G_{tt} \frac{\partial^2}{\partial h^2_t}(\text{log}p_t + \text{log} p_{t-1})|_{\mathbf{h}=\tilde{\mathbf{h}}}, \quad G_{t-1,t}=\frac{\partial^2 \text{log}(p_t)}{\partial h_t \partial h_{t+1}}|_{\mathbf{h}=\tilde{\mathbf{h}}}; 
+\end{align*}
+where
+\begin{align*}
+\frac{\partial \text{log}(p_t)}{\partial h_t}&=-.5 -\frac{1}{2(1-\rho^2)} \Big(-e^{-h_t}(y_t -\mu)^2 - \frac{2\phi_h \rho^2}{\omega^2_h}(h_{t+1}-\phi_hh_t -\mu_h (1-\phi_h) ) \\
+& +\frac{\rho}{\omega_h} e^{-h_t/2}(y_t -\mu)(h_{t+1} -\phi_hh_t -\mu_h(1-\phi_h)+2\phi_h) \Big),\\
+\frac{\partial^2 \text{log}(p_t)}{\partial h^2_t}&= -\frac{1}{2(1-\rho^2)} \Big(-e^{-h_t}(y_t -\mu)^2 + \frac{2\phi_h \rho^2}{\omega^2_h} \\
+& -\frac{\rho}{\omega_h} e^{-h_t/2}(y_t -\mu)(h_{t+1} -\phi_hh_t -\mu_h(1-\phi_h)+4\phi_h) \Big),\\
+\frac{\partial \text{log}(p_t)}{\partial h_{t+1}}&=\frac{\rho}{\omega_h(1-\rho^2)} e^{-h_t/2}\Big(y_t -\mu 
+-\frac{\rho}{\omega_h} e^{h_t/2}(h_{t+1} -\phi_hh_t -\mu_h(1-\phi_h)) \Big),\\
+\frac{\partial^2 \text{log}(p_t)}{\partial h^2_{t+1}}&=-\frac{\rho^2}{\omega_h^2(1-\rho^2)} \\
+\frac{\partial^2 \text{log}(p_t)}{\partial h_{t}\partial h_{t+1}}&=-\frac{\rho}{\omega_h(1-\rho^2)}\Big( \frac{\phi_h \rho}{\omega_h} -\frac{1}{2}e^{-h_t/2}(y_t-\mu)\Big). \\
+\end{align*}
+
+\subsection*{Sampling $p(\rho|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \phi_h, \omega^2_h)$: Griddy Gibbs is used  as $\rho$ is bounded from (-1,1)}
+
+\begin{align*}
+\text{log}p(\rho|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \phi_h, \omega^2_h) \propto \text{log}p(\rho) -\frac{T}{2} \text{log}(1-\rho^2) -\frac{1}{2(1-\rho^2)} \Big(k_1 -\frac{2\rho k_2}{\omega_h}+\frac{\rho^2k_3}{\omega^2_h} \Big),
+\end{align*}
+where $p(\rho)$ is the prior density of $\rho$, $k_1=\sum_{t=1}^T e^{-h_t}(y_t -\mu)^2$, $k_2 =\sum_{t=1}^T e^{-h_t/2}(y_t-\mu) \varepsilon_t^h$, and $k_3=\sum_{t=1}^T(\varepsilon^h_t)^2$ with $\varepsilon_t^h=h_{t+1}-\phi_hh_t -\mu_h(1-\phi_h)$. 
+\subsection*{Other parameters are sampled following standard stochastic volatility. For example, sampling $p(\rho|\mathbf{y}, \mathbf{h}, \mu, \mu_h, \phi_h, \omega^2_h)$ is as follows}
+\bbeq
+p(\mu|y, \mathbf{h}, \rho, \mu_h, \phi_h, \omega^2_h) \sim N(\hat{\mu}, D_{\mu}),
+\eeeq
+where $D^{-1}_{\mu}= 1/V_{\mu} +(1-\rho^2)^{-1} \sum_{t=1}^T e^{-h_t}$ and $\hat{\mu}=D_{\mu}(\mu_0/V_{\mu}+(1-\rho^2)^{-1} \sum_{t=1}^T e^{-h_t}(y_t-\rho e^{h_t/2}\varepsilon_t^h/\omega_h))$
+
+
+\section{Stochastic volatility model with jump }
+
+
+\bibliographystyle{apa}
+\bibliography{refs} 
+\end{document}
